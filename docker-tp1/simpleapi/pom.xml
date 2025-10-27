@@ -19,6 +19,7 @@
 		<testcontainers.version>1.20.4</testcontainers.version>
 		<validation.version>3.1.0</validation.version>
 		<sonar.organization>blainaa</sonar.organization>
+		
 	</properties>
 
 	<dependencies>
