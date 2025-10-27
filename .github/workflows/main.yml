@@ -9,16 +9,13 @@ on:
 
 # Liste des jobs à exécuter
 jobs:
-  # --- JOB 1 : TESTER ET ANALYSER (SonarCloud est ICI) ---
+  # --- JOB 1 : TESTER L'APPLICATION JAVA ---
   test-backend:
     runs-on: ubuntu-24.04
     steps:
-      # 1. Récupère le code
+      # 1. Récupère le code du dépôt
       - name: Checkout code
         uses: actions/checkout@v4
-        # On ajoute fetch-depth: 0 pour que Sonar puisse analyser l'historique
-        with:
-          fetch-depth: 0 
 
       # 2. Installe Java 21
       - name: Set up JDK 21
@@ -27,41 +24,57 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. Lance les tests ET l'analyse Sonar en UNE SEULE commande
-      - name: Build, test and analyze with Maven/SonarCloud
-        # Commande corrigée avec le bon chemin et les secrets
-        run: >
-          mvn -B verify sonar:sonar
-          -Dsonar.projectKey=Blainaa_TD1_Docker
-          -Dsonar.organization=blainaa
-          -Dsonar.host.url=https://sonarcloud.io
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          --file ./docker-tp1/simpleapi/pom.xml
-        env:
-          # Token GitHub nécessaire pour que Sonar décore les Pull Requests
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Token Sonar
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # 3. Lance les tests Maven (en pointant vers le bon pom.xml)
+      - name: Build and test with Maven
+        run: mvn clean verify --file ./docker-tp1/simpleapi/pom.xml
+  
+  sonar_analyse :
 
-  # --- JOB 2 : CONSTRUIRE ET PUBLIER LES IMAGES DOCKER ---
-  build-and-push-docker-image:
-    # Ce job attend que le job 'test-backend' (qui inclut Sonar) réussisse
     needs: test-backend
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: SonarCloud Scan
+        run: mvn -B verify sonar:sonar -Dsonar.projectKey=Blainaa_TD1_Docker -Dsonar.organization=blainaa -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${{ secrets.SONAR_TOKEN }}  --file ./simple-api/pom.xml
+
+
+
+  # --- JOB 2 : CONSTRUIRE ET PUBLIER LES IMAGES DOCKER ---
+  build-and-push-docker-image:
+    # Ne se lance que si le job "test-backend" a réussi
+    needs: 
+      - test-backend
+      - sonar_analyse
+    runs-on: ubuntu-24.04
+    steps:
+      # 1. Récupère le code (nécessaire pour ce job aussi)
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Se connecte à Docker Hub en utilisant les secrets
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
+      # 3. Construit et pousse l'image backend (API)
       - name: Build image and push backend
         uses: docker/build-push-action@v6
         with:
+          # Chemin vers le dossier qui contient le Dockerfile de l'API
           context: ./docker-tp1/simpleapi
+          # Nom de l'image sur Docker Hub
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-simple-api:latest
+          # Ne "push" que si on est sur la branche "main"
           push: ${{ github.ref == 'refs/heads/main' }}
 
+      # 4. Construit et pousse l'image database
       - name: Build image and push database
         uses: docker/build-push-action@v6
         with:
@@ -69,6 +82,7 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/tp-devops-simple-database:latest
           push: ${{ github.ref == 'refs/heads/main' }}
 
+      # 5. Construit et pousse l'image httpd
       - name: Build image and push httpd
         uses: docker/build-push-action@v6
         with:
