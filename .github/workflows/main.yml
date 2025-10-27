@@ -4,10 +4,11 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+
 
 jobs:
   test-backend:
+    # --- CE JOB EST L'ANCIEN, ON NE LE TOUCHE PAS ---
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
@@ -20,5 +21,49 @@ jobs:
           distribution: 'temurin'
 
       - name: Build and test with Maven
-        # LE CHEMIN CORRIGÉ EST ICI :
         run: mvn clean verify --file ./docker-tp1/simpleapi/pom.xml
+
+  #
+  # --- ON AJOUTE TOUT CE NOUVEAU JOB CI-DESSOUS ---
+  #
+  build-and-push-docker-image:
+    # (Réponse à la Question 2-3)
+    # Ce job ne se lance QUE si "test-backend" a réussi
+    needs: test-backend
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Étape de connexion à DockerHub (TP image c7dbb7.png)
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+      # Construit et Pousse l'image backend (API)
+      - name: Build image and push backend
+        uses: docker/build-push-action@v6
+        with:
+          # Chemin vers le Dockerfile de l'API
+          context: ./docker-tp1/simpleapi
+          # Tag de l'image (ton-login/nom-image:tag)
+          tags: ${{secrets.DOCKERHUB_USERNAME}}/tp-devops-simple-api:latest
+          # On ne pousse QUE si on est sur la branche 'main'
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Construit et Pousse l'image database
+      - name: Build image and push database
+        uses: docker/build-push-action@v6
+        with:
+          # Chemin vers le Dockerfile de la BDD
+          context: ./docker-tp1/database
+          tags: ${{secrets.DOCKERHUB_USERNAME}}/tp-devops-simple-database:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Construit et Pousse l'image httpd
+      - name: Build image and push httpd
+        uses: docker/build-push-action@v6
+        with:
+          # Chemin vers le Dockerfile de httpd
+          context: ./docker-tp1/httpd
+          tags: ${{secrets.DOCKERHUB_USERNAME}}/tp-devops-simple-httpd:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
