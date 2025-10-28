@@ -1,2 +1,13 @@
----
-# tasks file for ansible/roles/proxy
+- name: Run HTTPD Proxy
+  community.docker.docker_container:
+    name: tp-www
+    image: blaina/tp-devops-simple-httpd:latest 
+    state: started
+    # Expose le proxy sur le port 80 du serveur (point d'entrée public)
+    ports:
+      - "80:80" 
+    networks:
+      - name: tp-devops-network
+    # Assure que l'API est démarrée avant le proxy
+    depends_on:
+      - tp-api

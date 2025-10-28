@@ -3,10 +3,10 @@
   become: true
   
   roles:
-    # 1. Installer/Vérifier Docker
+    # 1. PRÉREQUIS : Assure que Docker est prêt (utilise le code que vous venez de coller)
     - docker 
     
-    # 2. Déploiement de la stack
+    # 2. DÉPLOIEMENT : L'ordre est essentiel
     - network
     - database
     - api

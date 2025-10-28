@@ -1,2 +1,4 @@
----
-# tasks file for ansible/roles/network
+- name: Create custom bridge network
+  community.docker.docker_network:
+    name: tp-devops-network
+    state: present
