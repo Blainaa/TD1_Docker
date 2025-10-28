@@ -1,14 +1,13 @@
 - name: Run API Container
   community.docker.docker_container:
     name: tp-api
-    image: blaina/tp-devops-simple-api:latest # VOTRE IMAGE API
+    image: blaina/tp-devops-simple-api:latest 
     state: started
-    ports:
-      - "8080:8080"
+    # ...
     env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://tp-db:5432/devops_db
-      SPRING_DATASOURCE_USERNAME: devops_user
-      SPRING_DATASOURCE_PASSWORD: devops_password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://tp-db:5432/db  # Utilise 'tp-db' comme host et 'db' comme nom de DB
+      SPRING_DATASOURCE_USERNAME: usr                         # Utilise 'usr'
+      SPRING_DATASOURCE_PASSWORD: pwd                         # Utilise 'pwd'
       SERVER_PORT: "8080"
     networks:
       - name: tp-devops-network

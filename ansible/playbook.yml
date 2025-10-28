@@ -3,10 +3,7 @@
   become: true
   
   roles:
-    # 1. PRÉREQUIS
     - docker 
-    
-    # 2. DÉPLOIEMENT
     - network
     - database
     - api
