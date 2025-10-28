@@ -3,10 +3,10 @@
   become: true
   
   roles:
-    # 1. PRÉREQUIS : Assure que Docker est prêt (utilise le code que vous venez de coller)
+    # 1. PRÉREQUIS
     - docker 
     
-    # 2. DÉPLOIEMENT : L'ordre est essentiel
+    # 2. DÉPLOIEMENT
     - network
     - database
     - api

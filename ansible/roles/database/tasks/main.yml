@@ -1,9 +1,8 @@
 - name: Run Database Container
   community.docker.docker_container:
     name: tp-db
-    image: blaina/tp-postgres:latest 
+    image: blaina/tp-postgres:latest # VOTRE IMAGE DB
     state: started
-    # Variables d'environnement pour l'initialisation de la DB
     env:
       POSTGRES_USER: devops_user
       POSTGRES_PASSWORD: devops_password
